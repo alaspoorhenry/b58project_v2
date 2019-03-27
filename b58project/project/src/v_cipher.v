@@ -130,9 +130,8 @@ module vigenere_cipher(
 
     // 0 to 3
     reg [1:0] IDX;
-    wire [1:0] IDX_next;
+    reg [1:0] IDX_next;
 
-    assign IDX_next = IDX+1;
     assign IDX_out = IDX;
 
     initial
@@ -179,25 +178,34 @@ module vigenere_cipher(
             2'b00:
                  begin
                      char_out <= char_out_0;
+                     IDX_next <= 2'b01;
                  end
             2'b01:
                  begin
                      char_out <= char_out_1;
+                     IDX_next <= 2'b10;
                  end
             2'b10:
                  begin
                      char_out <= char_out_2;
+                     IDX_next <= 2'b11;
                  end
             2'b11:
                  begin
                      char_out <= char_out_3;
+                     IDX_next <= 2'b00;
                  end
             default:
                  begin
                      char_out <= char_out_0;
+                     IDX_next <= 2'b01;
                  end
         endcase
 
+    end
+
+    always @(posedge keyboard_clk)
+    begin
         IDX <= IDX_next;
     end
 

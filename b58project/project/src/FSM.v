@@ -102,7 +102,7 @@ module Datapath
 	
 	always @(posedge keyboard_clk)
 	begin
-                CIPHER_SHIFT_CLOCK <= ~CIPHER_SHIFT_CLOCK;
+
 		case(STATE)
 			S_START: 
 				begin			
@@ -140,6 +140,7 @@ module Datapath
 					VGA_DISPLAY_CLOCK <= 1'b0;			
 				end
 		endcase
+                CIPHER_SHIFT_CLOCK <= ~CIPHER_SHIFT_CLOCK;
 	end
 endmodule
 
