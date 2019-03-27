@@ -31,6 +31,8 @@ module cipher_top(
 
         // DE2 board outputs
         output [17:0] LEDR,
+        output [6:0] HEX0,
+        output [6:0] HEX1,
 
         // DE2 board control inputs
         input CLOCK_50,                             // 50 MHz
@@ -133,7 +135,16 @@ module cipher_top(
     assign LEDR[7:0] = VGA_char;
     assign LEDR[17] = keyboard_clk;
     assign LEDR[12:10] = STATE;
-	
+
+    hex_display h0(
+        .IN(VGA_char[3:0]),
+        .OUT(HEX0)
+        );
+
+    hex_display h1(
+        .IN(VGA_char[7:4]),
+        .OUT(HEX1)
+        );
 	
 	 
 endmodule

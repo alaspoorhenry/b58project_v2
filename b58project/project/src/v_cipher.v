@@ -140,7 +140,8 @@ module vigenere_cipher(
 
     always @(posedge keyboard_clk)
     begin
-        IDX <= IDX_next;
+
+	// https://cryptii.com/pipes/vigenere-cipher
 
         /*
         // DEBUG; prints IDX on LEDS
@@ -195,6 +196,7 @@ module vigenere_cipher(
                  end
         endcase
 
+        IDX <= IDX_next;
     end
 
 

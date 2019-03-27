@@ -77,7 +77,7 @@ module Datapath
 	begin
 		CIPHER_SHIFT_CLOCK <= 1'b0;
 		VGA_DISPLAY_CLOCK <= 1'b0;
-		key_reg <= 32'b0;	
+		key_reg <= 32'b0;
 		VGA_char <= SPC_ASCII_CHAR; //default is space					
 	end
 
