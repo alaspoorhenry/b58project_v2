@@ -84,7 +84,8 @@ module vigenere_cipher(
     input [31:0] key_arr,
     input [7:0] char_in,
     input keyboard_clk,
-    output reg [7:0] char_out
+    output reg [7:0] char_out,
+    output [1:0] IDX_out
     );
 
     wire [7:0] key_0;
@@ -132,6 +133,7 @@ module vigenere_cipher(
     wire [1:0] IDX_next;
 
     assign IDX_next = IDX+1;
+    assign IDX_out = IDX;
 
     initial
     begin

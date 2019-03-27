@@ -31,6 +31,7 @@ module cipher_top(
 
         // DE2 board outputs
         output [17:0] LEDR,
+        output [7:0] LEDG,
         output [6:0] HEX0,
         output [6:0] HEX1,
 
@@ -106,7 +107,8 @@ module cipher_top(
         .keyboard_clk(keyboard_clk),             // in
         .keyboard_char(ASCII_value),             // in
         .VGA_char(VGA_char),                     // out, goes to VGA
-        .VGA_DISPLAY_CLOCK(VGA_DISPLAY_CLOCK)    // out, triggers VGA display
+        .VGA_DISPLAY_CLOCK(VGA_DISPLAY_CLOCK),   // out, triggers VGA display
+	.CIPHER_IDX(LEDG[1:0])                   // out. Displays current key IDX on LEDG
         );
 
 

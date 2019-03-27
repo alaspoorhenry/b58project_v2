@@ -63,7 +63,9 @@ module Datapath
         input keyboard_clk,
         input [7:0] keyboard_char,
         output reg [7:0] VGA_char,
-        output reg VGA_DISPLAY_CLOCK
+        output reg VGA_DISPLAY_CLOCK,
+
+	output [1:0] CIPHER_IDX
         );
 
 	reg [31:0] key_reg;
@@ -95,7 +97,7 @@ module Datapath
 	// vigenere_cipher CIPHER(.key_arr(key_reg), .char_in(keyboard_char), .char_out(Char_out), .keyboard_clk(keyboard_clk));
 	// KEY increments twice for every button
 
-	vigenere_cipher CIPHER(.key_arr(key_reg), .char_in(keyboard_char), .char_out(Char_out), .keyboard_clk(CIPHER_SHIFT_CLOCK));
+	vigenere_cipher CIPHER(.key_arr(key_reg), .char_in(keyboard_char), .char_out(Char_out), .keyboard_clk(CIPHER_SHIFT_CLOCK), .IDX_out(CIPHER_IDX));
 
 	
 	always @(posedge keyboard_clk)
