@@ -26,7 +26,7 @@ module ASCII_to_mod26(output [7:0]mod26_out, input [7:0]ascii_in);
           begin
               out <= 32;
           end
-      // other; output space
+      // other; output space char
       else
           begin
               out <= 32;
@@ -47,7 +47,7 @@ module mod26_toASCII(output [7:0]ascii_out, input [7:0]mod26_in);
           begin
               out <= mod26_in + 97;
           end
-      // other; output space
+      // other; output space char
       else
           begin
               out <= 32;
@@ -57,42 +57,4 @@ module mod26_toASCII(output [7:0]ascii_out, input [7:0]mod26_in);
     assign ascii_out = out;
 endmodule
 
-
-//module caesar_cipher
-//	(
-//	input [47:0] key,         // only key[8:0] is used
-//	input [7:0] char_in,
-//	output reg [7:0] char_out
-//	);
-//
-//	wire [7:0] key_m26;
-//
-//	ASCII_to_mod26 AM(
-//	.mod26_out(key_m26),
-//	.ascii_in(key[7:0])
-//	);
-//	
-//    always @(char_in)module caesar_cipher
-//    begin
-//
-//        if (char_in >= 97 && char_in <= 122)
-//        begin
-//            if (char_in + key_m26 > 122)
-//            // overflow
-//            begin
-//                char_out <= char_in + key_m26 - 26;
-//            end
-//            else
-//            // no overflow
-//            begin
-//                char_out <= char_in + key_m26;
-//            end
-//        end
-//        else
-//        begin
-//            char_out <= 8'd32; // Space ascii char
-//        end
-//    end
-//
-//endmodule
 
