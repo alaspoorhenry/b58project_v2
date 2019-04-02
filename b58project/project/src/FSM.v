@@ -152,7 +152,8 @@ module Datapath
 				// basically defaults to what is being done in S_START state
 				begin
 					key_reg <= 31'd0;
-					VGA_DISPLAY_CLOCK <= 1'b0; // sets clock to 0 to prevent displaying on this state	
+					VGA_DISPLAY_CLOCK <= 1'b0; // sets clock to 0 to prevent displaying on this state
+											   // Toggles the output so VGA knows when to read
 				end
 		endcase
                 CIPHER_SHIFT_CLOCK <= ~CIPHER_SHIFT_CLOCK; // toggles keyboard_clk input for vig. cipher to negative
