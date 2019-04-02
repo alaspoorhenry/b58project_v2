@@ -77,9 +77,9 @@ module caesar_cipher_8_bit
 endmodule
 
 
-
-
-
+// supports 4 char key
+// reference:
+// https://cryptii.com/pipes/vigenere-cipher
 module vigenere_cipher(
     input [31:0] key_arr,
     input [7:0] char_in,
@@ -103,6 +103,7 @@ module vigenere_cipher(
     assign key_2 = key_arr[23:16];
     assign key_3 = key_arr[31:24];
 
+    // instantiate 4 caesar_cipher_8_bit modules (1 for each key char)
     caesar_cipher_8_bit C0(
         .key(key_0),
         .char_in(char_in),
@@ -139,40 +140,9 @@ module vigenere_cipher(
         IDX <= 2'b00;
     end
 
+    // on keyboard clock, modify the output char and assign IDX_next to next key char
     always @(posedge keyboard_clk)
     begin
-
-	// https://cryptii.com/pipes/vigenere-cipher
-
-        /*
-        // DEBUG; prints IDX on LEDS
-        char_out[3:0] <= IDX;
-        char_out[7:4] <= 4'b0000;
-
-        // DEBUG; displays key[IDX]
-        case (IDX)
-            2'b00:
-                 begin
-                     char_out <= key_0;
-                 end
-            2'b01:
-                 begin
-                     char_out <= key_1;
-                 end
-            2'b10:
-                 begin
-                     char_out <= key_2;
-                 end
-            2'b11:
-                 begin
-                     char_out <= key_3;
-                 end
-            default:
-                 begin
-                     char_out <= key_0;
-                 end
-        endcase
-        */
 
         case (IDX)
             2'b00:
@@ -204,11 +174,11 @@ module vigenere_cipher(
 
     end
 
+    // increment IDX
     always @(posedge keyboard_clk)
     begin
         IDX <= IDX_next;
     end
-
 
 endmodule
 
