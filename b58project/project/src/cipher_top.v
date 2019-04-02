@@ -142,22 +142,25 @@ module cipher_top(
 
     // instantiate VGA, pass VGA_char, VGA_DISPLAY_CLOCK
 	cipher_vga cv (
-		.clk(CLOCK_50),
-        	.asic(VGA_char),
-        	.go_k(KEY[3]),
-		.resetn(SW[0]),
-		.x_o(x_vga),
-		.y_o(y_vga),
-		.c_o(c_vga),
-		.w_o(writeEn_vga),
-		.debug(LEDG[7:2])
+		.clk(CLOCK_50),			//clock signal
+        	.asic(VGA_char),	//VGA_char for outputting to VGA
+        	.go_k(KEY[3]),		//clock signal for VGA
+		.resetn(SW[0]),			//reset switch for display
+		.x_o(x_vga),			// x - horizontal direction for drawing
+		.y_o(y_vga),			// y - vertical direction for drawing
+		.c_o(c_vga),			// colour input for vga display
+		.w_o(writeEn_vga),		// write enable for vga
+		.debug(LEDG[7:2])		// green LEDs for debugging display signals
     );
 
+
+	//red LEDs for debugging display clock, character (hex values), keyboard clock, and state of FSM
     assign LEDR[16] = VGA_DISPLAY_CLOCK;
     assign LEDR[7:0] = VGA_char;
     assign LEDR[17] = keyboard_clk;
     assign LEDR[12:10] = STATE;
 
+	//hex displays instantiated for debugging
     hex_display h0(
         .IN(VGA_char[3:0]),
         .OUT(HEX0)
