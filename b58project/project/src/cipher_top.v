@@ -111,27 +111,47 @@ module cipher_top(
 	.CIPHER_IDX(LEDG[1:0])                   // out. Displays current key IDX on LEDG
         );
 
+    wire [8:0] x_vga;
+    wire [7:0] y_vga;
+    wire [2:0] c_vga;
+    wire writeEn_vga;
+    vga_adapter VGA
+        (
+            .resetn(reset),
+            .clock(CLOCK_50),
+            .colour(c_vga),
+            .x(x_vga),
+            .y(y_vga),
+            .plot(writeEn_vga),
+            // Signals for the DAC to drive the monitor.
+		.VGA_CLK(VGA_CLK),    
+		.VGA_HS(VGA_HS),     
+		.VGA_VS(VGA_VS),     
+		.VGA_BLANK(VGA_BLANK_N),
+		.VGA_SYNC(VGA_SYNC_N), 
+		.VGA_R(VGA_R),
+		.VGA_G(VGA_G),
+		.VGA_B(VGA_B)
+        );
+
+
+    defparam VGA.RESOLUTION = "320x240"; // "160x120" works, for sure
+    defparam VGA.MONOCHROME = "FALSE";
+    defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
+    defparam VGA.BACKGROUND_IMAGE = "black_320.mif";
 
     // instantiate VGA, pass VGA_char, VGA_DISPLAY_CLOCK
-//	cipher_vga cv (
-//		.clk(CLOCK_50),
-//		.resetn(reset),
-//
-//        // come from Datapath
-//		.go_signal(VGA_DISPLAY_CLOCK),
-//		.asciis(VGA_char),
-//
-//		.del_signal(KEY[3]),
-//		.vga_clk(VGA_CLK),    
-//		.vga_hs(VGA_HS),     
-//		.vga_vs(VGA_VS),     
-//		.vga_blank_n(VGA_BLANK_N),
-//		.vga_sync_n(VGA_SYNC_N), 
-//		.vga_r(VGA_R),
-//		.vga_g(VGA_G),
-//		.vga_b(VGA_B) 
-//		.vga_b(VGA_B) 
-//    );
+	cipher_vga cv (
+		.clk(CLOCK_50),
+        	.asic(VGA_char),
+        	.go_k(KEY[3]),
+		.resetn(SW[0]),
+		.x_o(x_vga),
+		.y_o(y_vga),
+		.c_o(c_vga),
+		.w_o(writeEn_vga),
+		.debug(LEDG[7:2])
+    );
 
     assign LEDR[16] = VGA_DISPLAY_CLOCK;
     assign LEDR[7:0] = VGA_char;

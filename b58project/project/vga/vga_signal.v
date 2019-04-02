@@ -8,8 +8,8 @@ module vga_signal
         output wire [7:0] scan_code,         // scan_code received from keyboard to process
         output wire scan_code_ready,         // signal to outer control system to sample scan_code
         output wire del_code_ready,         // signal to outer control system to sample scan_code
-        output wire letter_case_out          // output to determine if scan code is converted to lower or upper ascii code for a key
-        //output wire [2:0] state          // output to determine if scan code is converted to lower or upper ascii code for a key
+        output wire letter_case_out,          // output to determine if scan code is converted to lower or upper ascii code for a key
+        output wire [2:0] state_out          // output to determine if scan code is converted to lower or upper ascii code for a key
     );
     
     // constant declarations
@@ -19,8 +19,8 @@ module vga_signal
                 CAPS     = 8'h58; // caps lock
 
     // FSM symbolic states
-    localparam [4:0]    idle          = 3'b000, // idle, process lower case letters
-                        input_press       = 3'b001, // ignore repeated scan code after break code -F0- reeived
+    localparam [4:0]    idle          = 3'b001, // idle, process lower case letters
+                        input_press       = 3'b000, // ignore repeated scan code after break code -F0- reeived
                         input_press_wait              = 3'b010, // process uppercase letters for shift key held
 						
                         del_press = 3'b011, // check scan code after F0, either idle or go back to uppercase
@@ -45,26 +45,19 @@ module vga_signal
     //ps2_rx ps2_rx_unit (.clk(clk), .reset(reset), .rx_en(1'b1), .ps2d(ps2d), .ps2c(ps2c), .rx_done_tick(scan_done_tick), .rx_data(scan_out));
     
     // FSM stat, shift_type, caps_num register 
-    always @(posedge clk, posedge reset)
-        if (reset)
-            begin
-            state_reg      <= idle;
-            shift_type_reg <= 0;
-            caps_num_reg   <= 0;
-            end
-        else
-            begin    
+    always @(posedge clk)
+    begin: clocker
             state_reg      <= state_next;
             shift_type_reg <= shift_type_next;
             caps_num_reg   <= caps_num_next;
-            end
+    end
             
     //FSM next state logic
     always @(negedge clk)
     begin
        
         // defaults
-        got_code_tick   = 1'b0;
+        //got_code_tick   = 1'b0;
         del_tick        = 1'b0;
         letter_case     = 1'b0;
         caps_num_next   = caps_num_reg;
@@ -78,92 +71,25 @@ module vga_signal
             begin
                 if (~go)
                     begin                                  // else if code is break code
-                    state_next = input_press;
-                    got_code_tick = 1'b1;                                // go to ignore_break state 
-                    end                                                                  // else if code is none of the above...
-                else if (~del)
-                    begin                                  // else if code is break code
-                    state_next = del_press;
-                    del_tick = 1'b1;                                // go to ignore_break state 
-                    end                                                                  // else if code is none of the above...
+                    state_next <= input_press;
+                    got_code_tick <= 1'b1;                                // go to ignore_break state 
+                    end
+		else
+		    got_code_tick <= 1'b0;                                                          // else if code is none of the above...
                                                                              // assert got_code_tick to write scan_out to FIFO
             end
             // state to ignore repeated scan code after break code FO received in lowercase state
             input_press:
             begin                                            // if scan code received, 
-                    state_next = input_press_wait;                                                           // go back to lowercase state
+                    state_next <= input_press_wait;  
+                    got_code_tick <= 1'b0;                                                         // go back to lowercase state
             end
             input_press_wait:
             begin
                 if (go)                                  // if scan code received, 
-                    state_next = idle;                                                           // go back to lowercase state
+                    state_next <= idle;    
+                    got_code_tick <= 1'b0;                                                       // go back to lowercase state
             end
-            del_press:
-            begin                                            // if scan code received, 
-                    state_next = del_press_wait;                                                           // go back to lowercase state
-            end
-            del_press_wait:
-            begin
-                if (del)                                  // if scan code received, 
-                    state_next = idle;                                                           // go back to lowercase state
-            end
-/*
-            // state to process scan codes after shift received in lowercase state
-            shift:
-            begin
-                letter_case = 1'b1;                                                                   // routed out to convert scan code to upper value for a key
-               
-                if(scan_done_tick)                                                                    // if scan code received,
-                begin
-                    if(scan_out == BREAK)                                                             // if code is break code                                            
-                        state_next = ignore_shift_break;                                              // go to ignore_shift_break state to ignore repeated scan code after F0
-                    else if(scan_out != SHIFT1 && scan_out != SHIFT2 && scan_out != CAPS)             // else if code is not shift/capslock
-                        got_code_tick = 1'b1;                                                         // assert got_code_tick to write scan_out to FIFO
-                end
-            end
-                    
-            // state to ignore repeated scan code after break code F0 received in shift state 
-            ignore_shift_break:
-            begin
-                if(scan_done_tick)                                                                // if scan code received
-                begin
-                    if(scan_out == shift_type_reg)                                                // if scan code is shift key initially pressed
-                        state_next = lowercase;                                                   // shift/capslock key unpressed, go back to lowercase state
-                    else                                                                          // else repeated scan code received, go back to uppercase state
-                        state_next = shift;
-                end
-            end  
-                    
-            // state to process scan codes after capslock code received in lowecase state
-            capslock:
-            begin
-                letter_case = 1'b1;                                                               // routed out to convert scan code to upper value for a key
-                        
-                if(caps_num_reg == 0)                                                             // if capslock code received 3 times, 
-                    state_next = lowercase;                                                   // go back to lowecase state
-                            
-                if(scan_done_tick)                                                                // if scan code received
-                begin 
-                    if(scan_out == CAPS)                                                          // if code is capslock, 
-                        caps_num_next = caps_num_reg - 1;                                         // decrement caps_num
-                    else if(scan_out == BREAK)                                                    // else if code is break, go to ignore_caps_break state
-                        state_next = ignore_caps_break;            
-                    else if(scan_out != SHIFT1 && scan_out != SHIFT2)                             // else if code isn't a shift key
-                        got_code_tick = 1'b1;                                                     // assert got_code_tick to write scan_out to FIFO
-                end
-            end
-                    
-            // state to ignore repeated scan code after break code F0 received in capslock state 
-            ignore_caps_break:
-            begin
-                if(scan_done_tick)                                                                // if scan code received
-                begin
-                    if(scan_out == CAPS)                                                          // if code is capslock
-                        caps_num_next = caps_num_reg - 1;                                         // decrement caps_num
-                    state_next = capslock;                                                        // return to capslock state
-                end
-            end
-*/ 
         endcase
     end
     
@@ -184,7 +110,6 @@ module vga_signal
     assign del_code_ready = del_tick;
     // route scan code data out
     assign scan_code = scan_out;
-	 
-	 //assign state = state_reg;
+   assign state = state_reg;
     
 endmodule

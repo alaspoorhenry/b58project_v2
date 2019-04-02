@@ -1,59 +1,24 @@
 module cipher_vga
     (
-        //input PS2_KBCLK,                            // Keyboard clock
-        //input PS2_KBDAT,                            // Keyboard input data
-        /*input CLOCK_50,                             //    On Board 50 MHz
-        input [2:0] KEY,                            // Reset key*/
-	input clk,
-	input resetn,
-	//input [1:0] switches,
-	input go_signal,
-	input del_signal,
-	input [7:0] asciis,
-	
-	//input [16:15] SW,
-        // The ports below are for the VGA output.  Do not change.
-        output vga_clk,                             //    VGA Clock
-        output vga_hs,                              //    VGA H_SYNC
-        output vga_vs,                              //    VGA V_SYNC
-        output vga_blank_n,                         //    VGA BLANK
-        output vga_sync_n,                          //    VGA SYNC
-        output [9:0] vga_r,                         //    VGA Red[9:0]
-        output [9:0] vga_g,                         //    VGA Green[9:0]
-        output [9:0] vga_b                          //    VGA Blue[9:0]
-	/*output [6:0] HEX0,
-	output [6:0] HEX1,
-	output [6:0] HEX2,
-	output [17:0] LEDR*/
+        input [7:0] asic,                            // Keyboard input data
+        input go_k,                            // Keyboard input data
+        input clk,                             //    On Board 50 MHz
+        input resetn,                             //    On Board 50 MHz
+	output [8:0] x_o,
+	output [7:0] y_o,
+	output [2:0] c_o,
+	output w_o,
+	output [5:0] debug
     );
-
-	 
-	hex_display h0(
-	       .IN(pixel_counter_transfer[3:0]),
-	       .OUT(HEX0)
-	);
-	hex_display h1(
-	       .IN(pixel_counter_transfer[7:4]),
-	       .OUT(HEX1)
-	);
-	hex_display h2(
-	       .IN(line_pos_counter_transfer[3:0]),
-	       .OUT(HEX2)
-	);
-	
-    wire [7:0] ascii_in;
-    //assign LEDR[17:10] = ascii_in;
-	/*
-    wire go_signal;
-    assign go_signal = switches[0];
-    wire del_signal;
-    assign del_signal = switches[1];
-	*/
     // Create the colour, x, y and writeEn wires that are inputs to the VGA adapter.
     wire [2:0] colour;
     wire [8:0] x;
     wire [7:0] y;
     wire writeEn;
+    assign x_o = x;
+    assign y_o = y;
+    assign c_o = colour;
+    assign w_o = writeEn;
     // Create wires used to transfer signals and data between datapath and FSM
     wire [7:0] pixel_counter_transfer;
     wire [5:0] x_pos_counter_transfer;
@@ -75,72 +40,52 @@ module cipher_vga
     // Create wires used to transfer keyboard input to datapath and FSM
     wire [6:0] ASCII_value;
     wire [7:0] kb_scan_code;
-    wire kb_sc_ready, kb_letter_case, kb_del;
-
-    // Create an Instance of a VGA controller - there can be only one!
-    // Define the number of colours as well as the initial background
-    // image file (.MIF) for the controller.
-	
-    vga_adapter VGA
+    wire kb_sc_ready, kb_letter_case;
+    assign debug[0] = kb_sc_ready;
+/*
+    // Instantiate keyboard input
+    keyboard kd
         (
-            .resetn(resetn),
-            .clock(clk),
-            .colour(colour),
-            .x(x),
-            .y(y),
-            .plot(writeEn),
-            /* Signals for the DAC to drive the monitor. */
-            .VGA_R(vga_r),
-            .VGA_G(vga_g),
-            .VGA_B(vga_b),
-            .VGA_HS(vga_hs),
-            .VGA_VS(vga_vs),
-            .VGA_BLANK(vga_blank_n),
-            .VGA_SYNC(vga_sync_n),
-            .VGA_CLK(vga_clk)
+            .clk(CLOCK_50),
+            .reset(~resetn),
+            .ps2d(PS2_KBDAT),
+            .ps2c(PS2_KBCLK),
+            .scan_code(kb_scan_code),
+            .scan_code_ready(kb_sc_ready),
+            .letter_case_out(kb_letter_case)
         );
 
-    defparam VGA.RESOLUTION = "320x240"; // "160x120" works, for sure
-    defparam VGA.MONOCHROME = "FALSE";
-    defparam VGA.BITS_PER_COLOUR_CHANNEL = 1;
-    defparam VGA.BACKGROUND_IMAGE = "black_320.mif";
-	//wire [2:0] waste;
+    key2ascii SC2A    
+        (
+            .ascii_code(ASCII_value),
+            .scan_code(kb_scan_code),
+            .letter_case(kb_letter_case)
+        );
+*/
+
     // Instantiate keyboard input
     vga_signal kd
         (
-			// Inputs
             .clk(clk),
-            .reset(~resetn),
-            .go(go_signal),
-            .del(del_signal),
-            //.ps2d(PS2_KBDAT),
-            //.ps2c(PS2_KBCLK),
-			// Outputs
+            .reset(resetn),
+            .go(go_k),
+			//
             .scan_code(kb_scan_code),
             .scan_code_ready(kb_sc_ready),
-            .del_code_ready(kb_del),
-            .letter_case_out(kb_letter_case)//,
-            //.state(waste)
+            .letter_case_out(kb_letter_case),
+            .state_out(debug[5:3])
         );
-/*
-    key2ascii_vga SC2A    
-        (
-            .ascii_code(ASCII_value), // currently irrelevant
-            .scan_code(kb_scan_code),
-        );
-*/
+
    // Instantiate datapath
     datapath d0
         (
-			// Outputs
             .x_out(x),
             .y_out(y),
             .colour_out(colour),
             .pixel_counter(pixel_counter_transfer),
-			.load_char(load_char_transfer),
+				.load_char(load_char_transfer),
             .x_pos_counter(x_pos_counter_transfer),
             .y_pos_counter(y_pos_counter_transfer),
-			// Inputs
             .line_pos_counter(line_pos_counter_transfer),
             .clk(clk),
             .reset_n(~resetn),
@@ -164,18 +109,17 @@ module cipher_vga
             .line_load(line_load),
             .line_parallel(line_parallel),
             .reset_line_pos_counter(reset_line_pos_counter_transfer),
-            .letter_in(ascii_in), //was ascii value
+            .letter_in(asic),
             .shift_for_cursor(shift_for_cursor_transfer)
         );
 
     // Instantiate FSM control
     control_FSM c0
         (
-			// Outputs
             .plot(writeEn),
             .inc_pixel_counter(inc_pixel_counter_transfer),
             .reset_pixel_counter(reset_pixel_counter_transfer),
-			.load_char(load_char_transfer),
+				.load_char(load_char_transfer),
             .inc_line_pos_counter(inc_line_pos_counter_transfer),
             .dec_line_pos_counter(dec_line_pos_counter_transfer),
             .line_load(line_load),
@@ -194,20 +138,16 @@ module cipher_vga
             .shift_for_cursor(shift_for_cursor_transfer),
             .cursor_colour(plot_cursor_transfer),
             .cursor_pixel_counter(cursor_pixel_counter_transfer),
-			// Inputs
             .clk(clk),
             .reset_n(~resetn),
             .char_available(kb_sc_ready),
-            .del_available(kb_del),
             .pixel_counter_in(pixel_counter_transfer),
             .x_pos_counter_in(x_pos_counter_transfer),
             .y_pos_counter_in(y_pos_counter_transfer),
             .line_pos_counter_in(line_pos_counter_transfer),
-            .asciis(asciis), // Input ascii from top
-            //.ascii_list(asciis),
-            .ascii_code(ascii_in) // changed this to output, it controls ascii now for print
+            .ascii_code(asic)
+	    //.s_out(debug)
         );
-		  
 endmodule
 
 module datapath
@@ -220,7 +160,7 @@ module datapath
         output [5:0] x_pos_counter,
         output [3:0] y_pos_counter,
         input clk,
-		input load_char,
+		  input load_char,
         input reset_n,
         input [2:0] colour_in,
         input inc_pixel_counter,
@@ -297,7 +237,7 @@ module datapath
     char_decoder decoder0
         (
             .OUT(letter_out),
-            .IN(letter_in) // The letter to be adjusted, was letter_in
+            .IN(letter_in)
         );
 
 
@@ -361,17 +301,16 @@ module control_FSM(
         input clk,
         input reset_n,
         input char_available,
-        input del_available,
-		//input [3:0] del_length,
         input [7:0] pixel_counter_in,
         input [5:0] line_pos_counter_in,
         input [5:0] x_pos_counter_in,
         input [3:0] y_pos_counter_in,
-        input [7:0] asciis,
-        output reg [6:0] ascii_code
+        input [6:0] ascii_code,
+	output [5:0] s_out
     );
 
     reg char_ready, backspace, delete;
+
     // Instantiate Rate Divider
     rate_divider RD
         (
@@ -389,37 +328,18 @@ module control_FSM(
         );
 
     reg [5:0] current_state, next_state;
-    reg cur_ascii_i;
-    reg [2:0] backspace_i;
-    reg [2:0] backspace_inc;
-    reg [2:0] backspace_len;
-    reg [2:0] backspace_base;
-    reg ascii_time;
-    reg in_backspace;
+    assign s_out = current_state;
     reg control_char;
     reg inc_cursor_pixel_counter, reset_cursor_pixel_counter;
     wire half_hz_clock;
-	
-    initial
-    begin
-		backspace_i <= 3'b000;
-		ascii_time <= 1'b0;
-		backspace_inc <= 3'b001;
-		backspace_len <= 3'b111;
-		backspace_base <= 3'b000;
-    end
-	/*
-    reg max_len = 7'b1010000;
-    reg inc = 7'b0000001;
-    reg base = 7'b0000000;
-	*/
+
     localparam  CHAR_SIZE             = 8'd127,
                 MAX_X_POS             = 6'd39,
                 MAX_Y_POS             = 4'd14,
                 MAX_CURSOR_W          = 4'd7;
 
-    localparam  S_PLOT_CURSOR           = 6'd0,
-                S_PLOT_CURSOR_WAIT      = 6'd1,
+    localparam  S_PLOT_CURSOR           = 6'd1,
+                S_PLOT_CURSOR_WAIT      = 6'd0,
                 S_CURSOR_INC            = 6'd2,
                 S_CURSOR_INC_WAIT       = 6'd3,
                 S_FLIP_CURSOR_COLOUR    = 6'd4,
@@ -454,7 +374,7 @@ module control_FSM(
                 S_DEC_Y_POS_WAIT        = 6'd33,
                 S_BACKSPACE             = 6'd34,
                 S_DELETE                = 6'd35,
-				S_INC_PIXEL_POST			 = 6'd36;
+					 S_INC_PIXEL_POST			 = 6'd36;
 
     localparam  NULL        = 7'h00, // NULL
                 PGUP        = 7'h02, // STX
@@ -468,19 +388,7 @@ module control_FSM(
                 END         = 7'h17, // ETB
                 ENTER       = 7'h0A, // LF
                 DELETE      = 7'h7F; // DEL
-    always @(posedge clk)
-    begin
-    if (char_available)
-	begin
-	    ascii_time = 1'b1;
-	end
-    if (del_available)
-	begin
-	    ascii_time = 1'b0;
 
-	end
-    end
-    
     always @(posedge clk)
     begin: state_table
         case (current_state)
@@ -498,25 +406,16 @@ module control_FSM(
 
             S_CHECK_CHAR:   
                         begin
-									if (ascii_time)
-										ascii_code <= asciis;
-									else
-										ascii_code <= BACKSPACE;
-									
                             if (ascii_code > 7'h1F && ascii_code < 7'h7F) // if a printing char
                             begin
                                 control_char = 1'b0;
-                                next_state = S_SAVE_CHAR;
+                                next_state =  S_SAVE_CHAR;
                             end
                             else if (control_char) // after cursor has been cleared
                             begin
                                 control_char = 1'b0;
                                 case(ascii_code)
-                                    BACKSPACE:  
-                                    begin
-                                        next_state = S_BACKSPACE;
-                                        in_backspace = 1'b1;
-                                    end
+                                    BACKSPACE:  next_state = S_BACKSPACE;
                                     HOME:       next_state = S_START_LINE;
                                     UP:         next_state = S_DEC_Y_POS_PRE;
                                     LEFT:       next_state = S_DEC_X_POS_PRE;
@@ -542,54 +441,16 @@ module control_FSM(
             S_INC_PIXEL:            next_state = S_INC_PIXEL_WAIT;
             S_INC_PIXEL_WAIT:       next_state = (pixel_counter_in <= CHAR_SIZE) ? S_PLOT_PIXEL : 
                 ( ((backspace == 1'b1) || (delete == 1'b1)) ? S_INC_PIXEL_POST : S_INC_X_POS_PRE );
-	    S_INC_PIXEL_POST: next_state = S_CHECK_CHAR;
-		// for multiple deletes
-		/*
-				begin	
-					if (in_backspace == 1'b1)
-					begin
-						if (backspace_i == backspace_len)
-						begin
-							backspace_i = backspace_base;
-							next_state = S_PLOT_CURSOR;
-							in_backspace = 1'b0;
-						end
-						else
-						begin
-							backspace_i = backspace_i + backspace_inc;
-							next_state = S_BACKSPACE;
-						end
-					end
-					else
-						next_state = S_CHECK_CHAR;
+				S_INC_PIXEL_POST: 		next_state = S_PLOT_CURSOR;
 
-				end
-*/
             S_INC_X_POS_PRE:        next_state = (x_pos_counter_in < MAX_X_POS) ? S_INC_X_POS : S_START_NEXT_LINE;
             S_INC_X_POS:            next_state = S_INC_X_POS_WAIT;
-            S_INC_X_POS_WAIT:		 next_state = S_PLOT_CURSOR;
-/*			
-		// for multiple characters
-				begin
-					// Reset if went over all letters
-					if (cur_ascii_i == max_len)
-					begin
-						cur_ascii_i = base;
-						next_state = S_PLOT_CURSOR;
-					end
-					// Otherwise move to next letter
-					else
-					begin
-						cur_ascii_i = cur_ascii_i + inc;
-						next_state = S_CHECK_CHAR;
-					end
-						
-				end
-*/
+            S_INC_X_POS_WAIT:       next_state = S_PLOT_CURSOR;
+
             S_DEC_X_POS_PRE:        next_state = (x_pos_counter_in > 0) ? S_DEC_X_POS : S_END_PREV_LINE;
             S_DEC_X_POS:            next_state = S_DEC_X_POS_WAIT;
             S_DEC_X_POS_WAIT:       next_state = (backspace == 1'b1) ? S_SAVE_CHAR : S_PLOT_CURSOR;
-		
+
             S_INC_Y_POS_PRE:        next_state = (y_pos_counter_in < MAX_Y_POS) ? S_INC_Y_POS : S_SCROLL_DOWN;
             S_INC_Y_POS:            next_state = S_INC_Y_POS_WAIT;
             S_INC_Y_POS_WAIT:       next_state = S_PLOT_CURSOR;
@@ -615,7 +476,7 @@ module control_FSM(
 
     always @(negedge clk)
     begin: enable_signals
-        char_ready = (ascii_code == NULL || control_char) ? 1'b0 : (char_available || del_available);
+        char_ready = (ascii_code == NULL || control_char) ? 1'b0 : char_available;
 
         plot                        = 1'b0;
         load_char                   = 1'b0;
@@ -657,11 +518,11 @@ module control_FSM(
 
             S_SAVE_CHAR:
                                     begin
-					reset_pixel_counter  		= 1'b1;
+													 reset_pixel_counter  		  = 1'b1;
                                         reset_cursor_pixel_counter  = 1'b1;
                                         shift_for_cursor            = 1'b0;
                                     end
-			S_SAVE_CHAR_WAIT:			load_char	                 = 1'b1;
+				S_SAVE_CHAR_WAIT:			    load_char	                 = 1'b1;
 
             S_PLOT_PIXEL:               plot                        = 1'b1;
             S_INC_PIXEL:            	 inc_pixel_counter           = 1'b1;
@@ -707,7 +568,5 @@ module control_FSM(
     begin: state_FFs
         current_state = reset_n ? S_PLOT_CURSOR : next_state;
     end // state_FFs
-	
 
 endmodule
-
