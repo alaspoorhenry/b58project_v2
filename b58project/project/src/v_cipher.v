@@ -1,3 +1,5 @@
+// Basic Caesar cipher module;
+// Supports only lowercase ascii as key and plaintext chars
 module caesar_cipher
 	(
 	input [31:0] key,         // only key[8:0] is used
@@ -7,14 +9,17 @@ module caesar_cipher
 
 	wire [7:0] key_m26;
 
+    // convert the key to mod 26 representation
 	ASCII_to_mod26 AM(
 	.mod26_out(key_m26),
 	.ascii_in(key[7:0])
 	);
 
+    // when char in changes, encrypt it and output on char_out reg
     always @(char_in)
     begin
 
+        // lower case ascii
         if (char_in >= 97 && char_in <= 122)
         begin
             if (char_in + key_m26 > 122)
@@ -29,15 +34,17 @@ module caesar_cipher
             end
         end
         else
+        // disallowed input - output Space ascii char
         begin
-            char_out <= 8'd32; // Space ascii char
+            char_out <= 8'd32;
         end
     end
 
 endmodule
 
 
-
+// Basic Caesar cipher module;
+// Supports only lowercase ascii as key and plaintext chars
 module caesar_cipher_8_bit
 	(
 	input [7:0] key,         // only key[8:0] is used
@@ -47,11 +54,13 @@ module caesar_cipher_8_bit
 
 	wire [7:0] key_m26;
 
+    // convert the key to mod 26 representation
 	ASCII_to_mod26 AM(
 	.mod26_out(key_m26),
 	.ascii_in(key)
 	);
 
+    // when char in changes, encrypt it and output on char_out reg
     always @(char_in)
     begin
 
@@ -69,14 +78,16 @@ module caesar_cipher_8_bit
             end
         end
         else
+        // disallowed input - output Space ascii char
         begin
-            char_out <= 8'd32; // Space ascii char
+            char_out <= 8'd32;
         end
     end
 
 endmodule
 
 
+// https://en.wikipedia.org/wiki/Vigen%C3%A8re_cipher
 // supports 4 char key
 // reference:
 // https://cryptii.com/pipes/vigenere-cipher
@@ -85,14 +96,16 @@ module vigenere_cipher(
     input [7:0] char_in,
     input keyboard_clk,
     output reg [7:0] char_out,
-    output [1:0] IDX_out
+    output [1:0] IDX_out            // output for debug purposes
     );
 
+    // 4 key ascii bytes
     wire [7:0] key_0;
     wire [7:0] key_1;
     wire [7:0] key_2;
     wire [7:0] key_3;
 
+    // used by caesar_cipher_8_bit modules
     wire [7:0] char_out_0;
     wire [7:0] char_out_1;
     wire [7:0] char_out_2;
@@ -103,7 +116,7 @@ module vigenere_cipher(
     assign key_2 = key_arr[23:16];
     assign key_3 = key_arr[31:24];
 
-    // instantiate 4 caesar_cipher_8_bit modules (1 for each key char)
+    // instantiate 4 caesar_cipher_8_bit modules (1 for each key char, 0-3)
     caesar_cipher_8_bit C0(
         .key(key_0),
         .char_in(char_in),
@@ -129,12 +142,15 @@ module vigenere_cipher(
     );
 
 
+    // IDX - current key index
+    // IDX_next - key index on next keyboard clock cycle
     // 0 to 3
     reg [1:0] IDX;
     reg [1:0] IDX_next;
 
     assign IDX_out = IDX;
 
+    // set IDX to 0 (first key byte initially)
     initial
     begin
         IDX <= 2'b00;
@@ -163,7 +179,7 @@ module vigenere_cipher(
             2'b11:
                  begin
                      char_out <= char_out_3;
-                     IDX_next <= 2'b00;
+                     IDX_next <= 2'b00;     // wrap around to the beginning of key
                  end
             default:
                  begin
@@ -174,7 +190,7 @@ module vigenere_cipher(
 
     end
 
-    // increment IDX
+    // increment IDX to next key index
     always @(posedge keyboard_clk)
     begin
         IDX <= IDX_next;
