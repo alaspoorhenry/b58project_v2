@@ -145,7 +145,7 @@ module cipher_top(
 		.clk(CLOCK_50),			//clock signal
         	.asic(VGA_char),	//VGA_char for outputting to VGA
         	.go_k(KEY[3]),		//clock signal for VGA
-		.resetn(SW[0]),			//reset switch for display
+		.resetn(~SW[0]),			//reset switch for display
 		.x_o(x_vga),			// x - horizontal direction for drawing
 		.y_o(y_vga),			// y - vertical direction for drawing
 		.c_o(c_vga),			// colour input for vga display
